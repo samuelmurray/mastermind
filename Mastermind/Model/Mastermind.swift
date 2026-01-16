@@ -2,11 +2,13 @@ import Foundation
 
 typealias Peg = Int
 
-struct Mastermind: Observable {
+@Observable class Mastermind {
     var mastercode: Code
     var guess: Code
     var attempts: [Code]
     let pegChoices: [Peg]
+    var startTime: Date = Date.now
+    var endTime: Date?
     
     init(gameSize: Int, numColors: Int) {
         self.mastercode = Mastermind.randomCode(ofLength: gameSize, numColors: numColors)
@@ -19,27 +21,30 @@ struct Mastermind: Observable {
         attempts.last?.pegs == mastercode.pegs
     }
     
-    mutating func restart() {
-        self.mastercode = randomizeCode()
-        self.guess = Mastermind.emptyGuess(guess.pegs.count)
-        self.attempts = []
+    func restart() {
+        mastercode = randomizeCode()
+        guess = Mastermind.emptyGuess(guess.pegs.count)
+        attempts.removeAll()
+        startTime = .now
+        endTime = nil
     }
     
-    mutating func updateGuess(at index: Int) {
+    func updateGuess(at index: Int) {
         var guessPegs = guess.pegs
         guessPegs[index] = (guess.pegs[index] + 1) % pegChoices.count
         guess = Code(kind: .guess, pegs: guessPegs)
     }
     
-    mutating func makeGuess() {
+    func makeGuess() {
         attempts.append(Code(kind: .attempt, pegs: guess.pegs))
         guess = Mastermind.emptyGuess(guess.pegs.count)
         if (isOver) {
             mastercode = Code(kind: .master(isHidden: false), pegs: mastercode.pegs)
+            endTime = .now
         }
     }
     
-    mutating func setGuessPeg(_ peg: Peg, at index: Int) {
+    func setGuessPeg(_ peg: Peg, at index: Int) {
         guard guess.pegs.indices.contains(index) else { return }
         var guessPegs = guess.pegs
         guessPegs[index] = peg
@@ -58,6 +63,16 @@ struct Mastermind: Observable {
     
     private static func emptyGuess(_ gameSize: Int) -> Code {
         return Code(kind: .guess, pegs: .init(repeating: -1, count: gameSize))
+    }
+}
+
+extension Mastermind: Identifiable, Hashable, Equatable {
+    static func == (lhs: Mastermind, rhs: Mastermind) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 

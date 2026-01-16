@@ -1,6 +1,7 @@
 import Foundation
 
-struct Code {
+struct Code: Identifiable {
+    var id: UUID = UUID()
     let kind: Kind
     let pegs: [Peg]
     
