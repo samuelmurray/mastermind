@@ -4,6 +4,7 @@ struct CodeView<AncillaryView>: View where AncillaryView: View {
     let code: Code
     @Binding var selection: Int
     let ancillaryView: () -> AncillaryView
+    @Environment(\.colorScheme) private var colorScheme
     
     init(
         code: Code,
@@ -30,7 +31,7 @@ struct CodeView<AncillaryView>: View where AncillaryView: View {
                     }
                     .overlay { // Obfuscation
                         Constants.pegShape()
-                            .foregroundStyle(code.isHidden ? .primary : Color.clear)
+                            .foregroundStyle(code.isHidden ? obfuscationColor : Color.clear)
                             .transaction { transaction in
                                 if code.isHidden {
                                     transaction.animation = nil
@@ -50,6 +51,10 @@ struct CodeView<AncillaryView>: View where AncillaryView: View {
                     ancillaryView()
                 }
         }
+    }
+    
+    var obfuscationColor: Color {
+        colorScheme == .dark ? .white.opacity(1) : .black.opacity(1)
     }
 }
 

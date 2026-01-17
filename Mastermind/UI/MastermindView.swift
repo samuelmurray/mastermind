@@ -11,7 +11,7 @@ struct MastermindView: View {
     var body: some View {
         VStack {
             CodeView(code: game.mastercode) {
-                ElapsedTime(startTime: game.startTime, endTime: game.endTime)
+                ElapsedTime(startTime: game.startTime, endTime: game.endTime, elapsedTime: game.elapsedTime)
                     .font(.system(size: 80))
                     .minimumScaleFactor(0.1)
                     .monospaced()
@@ -39,8 +39,10 @@ struct MastermindView: View {
             if !game.isOver {
                 PegChooserView(choices: game.pegChoices, onChoose: changePegAtSelection)
                     .transition(.pegChooser)
+                    .frame(maxHeight: 90)
             }
         }
+        .trackElapsedTime(in: game)
         .toolbar {
             Button("Restart", systemImage: "arrow.circlepath", action: restart)
         }
@@ -56,6 +58,7 @@ struct MastermindView: View {
         Button("Guess", action: guess)
             .font(.system(size: 80))
             .minimumScaleFactor(0.1)
+            .lineLimit(1)
             .disabled(game.guess.pegs.contains{$0 < 0})
     }
     
@@ -81,6 +84,38 @@ struct MastermindView: View {
                 restarting = false
             }
         }
+    }
+}
+
+extension View {
+    func trackElapsedTime(in game: Mastermind) -> some View {
+        self.modifier(ElapsedTimeView(game: game))
+    }
+}
+
+struct ElapsedTimeView: ViewModifier {
+    @Environment(\.scenePhase) var scenePhase
+    let game: Mastermind
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                game.startTimer()
+            }
+            .onDisappear {
+                game.pauseTimer()
+            }
+            .onChange(of: game) { oldGame, newGame in
+                oldGame.pauseTimer()
+                newGame.startTimer()
+            }
+            .onChange(of: scenePhase) {
+                switch scenePhase {
+                case .active: game.startTimer()
+                case .background: game.pauseTimer()
+                default: break
+                }
+            }
     }
 }
 
@@ -117,6 +152,6 @@ struct Constants {
 
 #Preview {
     NavigationStack {
-        MastermindView(game: Mastermind(gameSize: 2, numColors: 4))
+        MastermindView(game: Mastermind(gameSize: 3, numColors: 4))
     }
 }

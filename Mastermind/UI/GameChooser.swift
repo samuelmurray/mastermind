@@ -3,55 +3,55 @@ import SwiftUI
 struct GameChooser: View {
     @State var games: [Mastermind] = []
     @State private var path = NavigationPath()
-    @State private var gameSize: Int = 4
-    @State private var numColors: Int = 4
-    
+    @State private var selection: Mastermind? = nil
+    @State private var showGameEditor = false
+
     var body: some View {
-        NavigationStack(path: $path) {
-            List {
-                Section("New game") {
-                    let newGame = Mastermind(gameSize: gameSize, numColors: numColors)
-                    VStack {
-                        Stepper("Game size: \(gameSize)", value: $gameSize, in: 3...6)
-                        CodeView(code: newGame.mastercode)
-                    }
-                    VStack {
-                        Stepper("Number of colors: \(numColors)", value: $numColors, in: 3...6)
-                        PegChooserView(choices: newGame.pegChoices, onChoose: nil)
-                    }
-                    Button("Start") {
-                        let newGame = Mastermind(gameSize: gameSize, numColors: numColors)
-                        games.append(newGame)
-                        path.append(newGame)
-                    }
-                }
-                
+        NavigationSplitView(columnVisibility: .constant(.all)) {
+            List(selection: $selection) {
                 Section("History") {
-                    ForEach(games) { game in
-                        NavigationLink(value: game) {
-                            GameSummary(game: game)
-                        }
-                    }
-                    .onDelete { offsets in
-                        games.remove(atOffsets: offsets)
-                    }
-                    .onMove { from, to in
-                        games.move(fromOffsets: from, toOffset: to)
-                    }
+                    GameHistory(games: $games, selection: $selection)
                 }
             }
-            .navigationDestination(for: Mastermind.self) { game in
-                MastermindView(game: game)
+            .onChange(of: games) {
+                if let selection, !games.contains(selection) {
+                    self.selection = nil
+                }
             }
             .toolbar {
+                Button("New game", systemImage: "plus") {
+                    showGameEditor = true
+                }
+                .sheet(isPresented: $showGameEditor) {
+                    GameEditor { game in
+                        withAnimation {
+                            games.insert(game, at: 0)
+                            selection = game
+                            showGameEditor = false
+                        }
+                    }
+                }
                 EditButton()
+            }
+            .navigationTitle("Mastermind")
+        } detail: {
+            if let selection {
+                MastermindView(game: selection)
+            } else {
+                Text("Choose a game")
+            }
+        }
+        .navigationSplitViewStyle(.balanced)
+        .onAppear {
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                selection = games.last
             }
         }
     }
 }
 
 #Preview {
-    var game1 = Mastermind(gameSize: 3, numColors: 4)
-    var game2 = Mastermind(gameSize: 4, numColors: 3)
+    let game1 = Mastermind(gameSize: 3, numColors: 4)
+    let game2 = Mastermind(gameSize: 4, numColors: 3)
     GameChooser(games: [game1, game2])
 }

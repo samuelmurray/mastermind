@@ -7,8 +7,9 @@ typealias Peg = Int
     var guess: Code
     var attempts: [Code]
     let pegChoices: [Peg]
-    var startTime: Date = Date.now
+    var startTime: Date?
     var endTime: Date?
+    var elapsedTime: TimeInterval = 0
     
     init(gameSize: Int, numColors: Int) {
         self.mastercode = Mastermind.randomCode(ofLength: gameSize, numColors: numColors)
@@ -27,6 +28,7 @@ typealias Peg = Int
         attempts.removeAll()
         startTime = .now
         endTime = nil
+        elapsedTime = 0
     }
     
     func updateGuess(at index: Int) {
@@ -53,6 +55,19 @@ typealias Peg = Int
 
     func randomizeCode() -> Code {
         Mastermind.randomCode(ofLength: mastercode.pegs.count, numColors: pegChoices.count)
+    }
+
+    func startTimer() {
+        if startTime == nil, !isOver {
+            startTime = .now
+        }
+    }
+    
+    func pauseTimer() {
+        if let startTime, !isOver {
+            elapsedTime += Date.now.timeIntervalSince(startTime)
+            self.startTime = nil
+        }
     }
     
     static func randomCode(ofLength: Int, numColors: Int) -> Code {
