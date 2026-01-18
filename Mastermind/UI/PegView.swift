@@ -1,22 +1,35 @@
-let nullColor = Color.gray
-let colors: [Color] = [.red, .blue, .green, .yellow, .purple, .brown]
-
 import SwiftUI
 
 struct PegView: View {
     let peg: Peg
+    let stroke: Color
+    
+    init(peg: Peg, stroke: Color = .clear) {
+        self.peg = peg
+        self.stroke = stroke
+    }
         
     var body: some View {
-        Constants.pegShape()
-            .foregroundStyle(color(for: peg))
+        let color = Color(hexRGBA: peg) ?? .clear
+        RoundedRectangle(cornerRadius: 10)
+            .fill(color)
+            .strokeBorder(stroke, lineWidth: 5)
+            .aspectRatio(1, contentMode: .fit)
     }
-    
-    func color(for peg: Peg) -> Color {
-        return peg < 0 ? nullColor : colors[peg]
+}
+
+extension PegView {
+    init(peg: Color, stroke: Color = .clear) {
+        self.init(peg: peg.hexRGBA, stroke: stroke)
     }
 }
 
 #Preview {
-    PegView(peg: 0).padding()
-    PegView(peg: 0).padding()
+    PegView(peg: Color.blue)
+        .padding()
+    PegView(peg: Color.red)
+        .overlay {
+            PegView(peg: .clear, stroke: .primary)
+        }
+        .padding()
 }

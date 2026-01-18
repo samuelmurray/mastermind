@@ -20,18 +20,18 @@ struct CodeView<AncillaryView>: View where AncillaryView: View {
         HStack {
             ForEach(code.pegs.indices, id: \.self) { index in
                 PegView(peg: code.pegs[index])
+                    .contentShape(Rectangle())
                     .overlay { // Selection
                         Group {
                             if code.kind == .guess, selection == index
                             {
-                                Constants.pegShape(stroke: true)
+                                PegView(peg: .clear, stroke: .primary)
                             }
                         }
                         .animation(.selection, value: selection)
                     }
                     .overlay { // Obfuscation
-                        Constants.pegShape()
-                            .foregroundStyle(code.isHidden ? obfuscationColor : Color.clear)
+                        PegView(peg: code.isHidden ? obfuscationColor : Color.clear)
                             .transaction { transaction in
                                 if code.isHidden {
                                     transaction.animation = nil
@@ -54,12 +54,14 @@ struct CodeView<AncillaryView>: View where AncillaryView: View {
     }
     
     var obfuscationColor: Color {
-        colorScheme == .dark ? .white.opacity(1) : .black.opacity(1)
+        colorScheme == .dark ? .white : .black
     }
 }
 
 #Preview {
-    @Previewable @State var selection = 0
-    let code = Code(kind: .guess, pegs: [-1, 0, 1])
-    CodeView(code: code, selection: $selection) { EmptyView() }.padding()
+    @Previewable @State var selection = 1
+    let master = Code(kind: .master(isHidden: true), pegs: [.red, .blue, .green])
+    CodeView(code: master) { Text("00:05") }.padding()
+    let guess = Code(kind: .guess, pegs: [.red, .green, .clear])
+    CodeView(code: guess, selection: $selection) { EmptyView() }.padding()
 }

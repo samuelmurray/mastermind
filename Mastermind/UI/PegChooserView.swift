@@ -17,6 +17,12 @@ struct PegChooserView: View {
     }
 }
 
+extension PegChooserView {
+    init(choices: [Color], onChoose: ((Peg) -> Void)? = nil) {
+        self.init(choices: choices.map(\.hexRGBA), onChoose: onChoose)
+    }
+}
+
 #Preview {
-    PegChooserView(choices: [0, 1, 2]) { _ in }.padding()
+    PegChooserView(choices: [Color.yellow, .red, .blue]) { _ in }.padding()
 }

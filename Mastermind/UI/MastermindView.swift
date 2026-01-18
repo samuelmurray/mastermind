@@ -59,7 +59,7 @@ struct MastermindView: View {
             .font(.system(size: 80))
             .minimumScaleFactor(0.1)
             .lineLimit(1)
-            .disabled(game.guess.pegs.contains{$0 < 0})
+            .disabled(game.guess.pegs.contains{$0 == Code.missingPeg})
     }
     
     func guess() {
@@ -87,38 +87,6 @@ struct MastermindView: View {
     }
 }
 
-extension View {
-    func trackElapsedTime(in game: Mastermind) -> some View {
-        self.modifier(ElapsedTimeView(game: game))
-    }
-}
-
-struct ElapsedTimeView: ViewModifier {
-    @Environment(\.scenePhase) var scenePhase
-    let game: Mastermind
-    
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                game.startTimer()
-            }
-            .onDisappear {
-                game.pauseTimer()
-            }
-            .onChange(of: game) { oldGame, newGame in
-                oldGame.pauseTimer()
-                newGame.startTimer()
-            }
-            .onChange(of: scenePhase) {
-                switch scenePhase {
-                case .active: game.startTimer()
-                case .background: game.pauseTimer()
-                default: break
-                }
-            }
-    }
-}
-
 extension Animation {
     static let mastermind = Animation.default
     static let guess = Animation.mastermind
@@ -136,22 +104,8 @@ extension AnyTransition {
     }
 }
 
-struct Constants {
-    @ViewBuilder
-    static func pegShape(stroke: Bool = false) -> some View {
-        if stroke {
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(lineWidth: 5)
-                .aspectRatio(1, contentMode: .fit)
-        } else {
-            RoundedRectangle(cornerRadius: 10)
-                .aspectRatio(1, contentMode: .fit)
-        }
-    }
-}
-
 #Preview {
     NavigationStack {
-        MastermindView(game: Mastermind(gameSize: 3, numColors: 4))
+        MastermindView(game: Mastermind(gameSize: 3, pegChoices: [.green, .blue, .yellow]))
     }
 }

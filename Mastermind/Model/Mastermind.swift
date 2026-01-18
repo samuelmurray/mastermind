@@ -1,25 +1,33 @@
 import Foundation
+import SwiftData
 
-typealias Peg = Int
+typealias Peg = String
 
-@Observable class Mastermind {
-    var mastercode: Code
-    var guess: Code
-    var attempts: [Code]
-    let pegChoices: [Peg]
+@Model class Mastermind {
+    @Relationship(deleteRule: .cascade) var mastercode: Code
+    @Relationship(deleteRule: .cascade) var guess: Code
+    @Relationship(deleteRule: .cascade) var _attempts: [Code]
+    var pegChoices: [Peg]
     var startTime: Date?
     var endTime: Date?
     var elapsedTime: TimeInterval = 0
+    var creationDate: Date = Date.now
+    var isOver: Bool = false
     
-    init(gameSize: Int, numColors: Int) {
-        self.mastercode = Mastermind.randomCode(ofLength: gameSize, numColors: numColors)
+    init(gameSize: Int, pegChoices: [Peg]) {
+        self.mastercode = Mastermind.randomCode(ofLength: gameSize, pegChoices: pegChoices)
         self.guess = Mastermind.emptyGuess(gameSize)
-        self.attempts = []
-        self.pegChoices = Array(0..<numColors)
+        self._attempts = []
+        self.pegChoices = pegChoices
     }
     
-    var isOver: Bool {
-        attempts.last?.pegs == mastercode.pegs
+    var attempts: [Code] {
+        get {
+            _attempts.sorted { $0.timestamp < $1.timestamp }
+        }
+        set {
+            _attempts = newValue
+        }
     }
     
     func restart() {
@@ -29,18 +37,14 @@ typealias Peg = Int
         startTime = .now
         endTime = nil
         elapsedTime = 0
-    }
-    
-    func updateGuess(at index: Int) {
-        var guessPegs = guess.pegs
-        guessPegs[index] = (guess.pegs[index] + 1) % pegChoices.count
-        guess = Code(kind: .guess, pegs: guessPegs)
+        isOver = false
     }
     
     func makeGuess() {
         attempts.append(Code(kind: .attempt, pegs: guess.pegs))
-        guess = Mastermind.emptyGuess(guess.pegs.count)
-        if (isOver) {
+        guess.pegs = .init(repeating: Code.missingPeg, count: guess.pegs.count)
+        if attempts.last?.pegs == mastercode.pegs {
+            isOver = true
             mastercode = Code(kind: .master(isHidden: false), pegs: mastercode.pegs)
             endTime = .now
         }
@@ -48,18 +52,17 @@ typealias Peg = Int
     
     func setGuessPeg(_ peg: Peg, at index: Int) {
         guard guess.pegs.indices.contains(index) else { return }
-        var guessPegs = guess.pegs
-        guessPegs[index] = peg
-        guess = Code(kind: .guess, pegs: guessPegs)
+        guess.pegs[index] = peg
     }
 
     func randomizeCode() -> Code {
-        Mastermind.randomCode(ofLength: mastercode.pegs.count, numColors: pegChoices.count)
+        Mastermind.randomCode(ofLength: mastercode.pegs.count, pegChoices: pegChoices)
     }
 
     func startTimer() {
         if startTime == nil, !isOver {
             startTime = .now
+            //elapsedTime += 0.0000001 // Hack to make transient startTime trigger UI update
         }
     }
     
@@ -70,24 +73,19 @@ typealias Peg = Int
         }
     }
     
-    static func randomCode(ofLength: Int, numColors: Int) -> Code {
-        let pegs = (0..<ofLength).map { _ in Int.random(in: 0..<numColors, ) }
-        print(pegs)
+    func updateElapsedTime() {
+        pauseTimer()
+        startTimer()
+    }
+    
+    static func randomCode(ofLength: Int, pegChoices: [Peg]) -> Code {
+        let pegs = (0..<ofLength).map { _ in pegChoices.randomElement()! }
+        print(pegs.map{pegChoices.firstIndex(of: $0)})
         return Code(kind: .master(isHidden: true), pegs: pegs)
     }
     
     private static func emptyGuess(_ gameSize: Int) -> Code {
-        return Code(kind: .guess, pegs: .init(repeating: -1, count: gameSize))
-    }
-}
-
-extension Mastermind: Identifiable, Hashable, Equatable {
-    static func == (lhs: Mastermind, rhs: Mastermind) -> Bool {
-        lhs.id == rhs.id
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
+        return Code(kind: .guess, pegs: .init(repeating: Code.missingPeg, count: gameSize))
     }
 }
 

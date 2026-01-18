@@ -21,6 +21,6 @@ struct GameSummary: View {
 
 #Preview {
     List {
-        GameSummary(game: Mastermind(gameSize: 4, numColors: 3))
+        GameSummary(game: Mastermind(gameSize: 4, pegChoices: [.teal, .cyan, .yellow]))
     }
 }
